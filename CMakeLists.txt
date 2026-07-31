@@ -173,6 +173,10 @@ if(USE_LOCAL_DEPS)
         )
         add_library(shadowhook STATIC ${SHADOWHOOK_SOURCES})
         target_compile_definitions(shadowhook PRIVATE __ANDROID__API__=35)
+        # ShadowHook includes third-party LSS (linux_syscall_support.h), which
+        # triggers benign -Wimplicit-int-conversion-on-negation warnings under
+        # -Wconversion. Suppress that diagnostic for vendored code only.
+        target_compile_options(shadowhook PRIVATE -Wno-implicit-int-conversion-on-negation)
         
         # Build libshadowhook_nothing.so (required for Android 15+ compatibility)
         # Always built to generate architecture-correct embed header for the
@@ -293,7 +297,7 @@ else()
         "shadowhook_nothing target not found; using pre-generated "
         "arm64-v8a embed header. Set USE_LOCAL_DEPS=ON for multi-ABI support."
     )
-    set(NOTHING_EMBED_H_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/nothing_embed.h")
+    set(NOTHING_EMBED_H_PATH "${CMAKE_CURRENT_SOURCE_DIR}/include/nothing_embed.h")
 endif()
 
 add_library(memkit ${LIB_TYPE}

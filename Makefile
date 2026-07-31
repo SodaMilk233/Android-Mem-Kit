@@ -60,9 +60,12 @@ CFLAGS = -std=c23 -Wall -Wextra -Wpedantic -Wshadow -Wconversion \
          -Wmissing-prototypes -Wimplicit-fallthrough -Wvla \
          -Werror=implicit-function-declaration -Werror=int-conversion \
          -fPIC -O2 -Wno-macro-redefined -fdiagnostics-format=clang
+# ShadowHook sources include third-party LSS (linux_syscall_support.h), which
+# triggers benign -Wimplicit-int-conversion-on-negation warnings under
+# -Wconversion. Suppress that diagnostic for vendored code only.
+SH_CFLAGS = $(CFLAGS) -Wno-implicit-int-conversion-on-negation
 INCLUDES = -Iinclude \
            -I$(GEN_DIR) \
-           -Isrc \
            -Ideps/xdl/xdl/src/main/cpp/include \
            -Ideps/shadowhook/shadowhook/src/main/cpp/include \
            -Ideps/shadowhook/shadowhook/src/main/cpp \
@@ -241,7 +244,7 @@ $(OBJ_DIR)/src/%.o: src/%.c
 $(OBJ_DIR)/shadowhook/%.o: $(SH_DIR)/%.c
 	$(call update_progress)
 	$(call print_progress,"[CC]","$<",$(PERCENT))
-	@$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	@$(CC) $(SH_CFLAGS) $(INCLUDES) -c $< -o $@
 
 # ShadowHook ASM
 $(OBJ_DIR)/shadowhook/%.o: $(SH_DIR)/%.S
@@ -303,7 +306,7 @@ cppcheck:
 	@cppcheck --std=c23 --enable=all --suppress=missingIncludeSystem \
 	          --suppress=unusedFunction --suppress=preprocessorError \
 	          --suppress=staticFunction \
-	          -Iinclude -I$(GEN_DIR) -Isrc \
+	          -Iinclude -I$(GEN_DIR) \
 	          -Ideps/xdl/xdl/src/main/cpp/include \
 	          -Ideps/shadowhook/shadowhook/src/main/cpp/include \
 	          -Ideps/sljit/sljit_src \
