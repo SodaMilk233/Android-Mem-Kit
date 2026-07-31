@@ -10,117 +10,20 @@ Android-Mem-Kit is a minimal-overhead, pure C library for Android native instrum
 
 ---
 
-## ⚠️ Disclaimer
-
-This library is intended for:
-- ✅ **Security research** (analyzing app security, reverse engineering)
-- ✅ **Educational purposes** (learning Android internals, hooking techniques)
-- ✅ **Application debugging** (understanding native code behavior)
-- ✅ **Malware analysis** (dynamic analysis of malicious apps)
-- ✅ **Penetration testing** (with proper authorization)
-
-**NOT intended for:**
-- ❌ Game cheating or bypassing game protections
-- ❌ Circumventing security in production applications
-- ❌ Any illegal activities or unauthorized access
-
-**Always use responsibly and within legal boundaries.**
-
----
-
 ## Features
 
 | Feature | Implementation | Description |
 | :--- | :--- | :--- |
-| **Memory Patching** | Custom (mprotect-based) | Cross-page safe memory patching with XOM bypass |
 | **Function Hooking** | [ShadowHook](https://github.com/bytedance/android-inline-hook) | Inline hook with intercept, proxy chaining, and records |
 | **Symbol Resolution** | [XDL](https://github.com/hexhacking/xdl) | Bypasses Android 7+ linker restrictions |
-| **Enhanced Library Discovery** | `memkit_get_lib_base_v2()` | Finds libs loaded in-place from split APKs (Android 12+) |
 | **JIT Code Generation** | [SLJIT](https://github.com/zherczeg/sljit) | Platform-independent runtime code generation |
-| **IL2CPP Support** | Built-in | Unity app analysis and instrumentation |
 
 ### Why Pure C?
 
 - **Small Binary Size**: <100KB overhead
 - **Simple NDK Integration**: No FFI bridge or complex build setup
 - **Direct JNI/NDK Access**: Native C integration with Android frameworks
-- **Modern Tooling**: Leverages battle-tested libraries (ShadowHook, XDL)
-
----
-
-## Quick Start
-
-### 1. Prerequisites
-
-```bash
-# NDK r25b or newer required
-export ANDROID_NDK_HOME=/path/to/your/android-ndk
-
-# CMake 3.14+ required (used by Makefile to generate embed headers)
-# Install via: sudo apt install cmake  (or brew install cmake)
-```
-
-### 2. Clone & Setup
-
-```bash
-git clone https://github.com/HanSoBored/Android-Mem-Kit.git
-cd Android-Mem-Kit
-git submodule update --init --recursive
-```
-
-### 3. Build
-
-```bash
-# Default build (arm64-v8a)
-make
-
-# Build with tests
-make test
-
-# Custom ABI
-make ANDROID_ABI=armeabi-v7a
-
-# Clean build
-make clean && make
-
-# Custom build with CMake (for subproject use)
-cmake -B build -DMEMKIT_BUILD_SHARED=OFF -DCMAKE_TOOLCHAIN_FILE=...
-cmake --build build
-
-# Build with examples (CMake)
-cmake -B build -DBUILD_EXAMPLES=ON -DCMAKE_TOOLCHAIN_FILE=...
-cmake --build build
-```
-
-### 4. Basic Usage
-
-```c
-#include "memkit.h"
-#include <android/log.h>
-
-#define LOG_TAG "MyResearch"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-
-static int (*orig_SSL_read)(void* ssl, void* buf, int num) = NULL;
-
-static int my_SSL_read(void* ssl, void* buf, int num) {
-    LOGI("SSL_read: buf=%p, size=%d", buf, num);
-    return orig_SSL_read(ssl, buf, num);
-}
-
-__attribute__((constructor))
-void init() {
-    memkit_hook_init(SHADOWHOOK_MODE_UNIQUE, false);
-
-    void* stub = memkit_hook_by_symbol(
-        "libssl.so", "SSL_read",
-        (void*)my_SSL_read,
-        (void**)&orig_SSL_read
-    );
-
-    if (stub) LOGI("SSL_read hooked!");
-}
-```
+- **Modern Tooling**: Leverages battle-tested libraries (ShadowHook, XDL, SLJIT)
 
 ---
 
@@ -128,61 +31,19 @@ void init() {
 
 | Document | Content |
 |----------|---------|
-| **[docs/USAGE.md](docs/USAGE.md)** | Complete API reference: memory, hooking, intercept, JIT, IL2CPP, XDL, records, DL callbacks |
-| **[docs/RECIPES.md](docs/RECIPES.md)** | Common patterns: SSL pinning bypass, integrity checks, JIT code generation |
-
----
-
-## Project Structure
-
-```
-Android-Mem-Kit/
-├── include/
-│   ├── memkit.h            # Main public API header
-│   ├── memkit_jit.h        # JIT compiler API (SLJIT wrappers)
-│   ├── nothing_path.h      # Internal header for nothing path management
-│   └── nothing_embed.h     # Embedded libshadowhook_nothing.so blob (auto-generated)
-├── src/
-│   ├── memory.c            # Memory patching (mprotect-based)
-│   ├── hooking.c           # Basic hook/unhook + error handling
-│   ├── hooking_flags.c     # V2 hook API with mode flags
-│   ├── intercept.c         # Intercept API (pre-call CPU context)
-│   ├── records.c           # Records API (operation logging)
-│   ├── runtime_config.c    # Runtime configuration
-│   ├── dl_callbacks.c      # DL init/fini callbacks
-│   ├── il2cpp.c            # IL2CPP symbol resolution
-│   ├── il2cpp_safe.c       # IL2CPP safe call helpers
-│   ├── xdl_wrapper.c       # xDL wrapper layer
-│   ├── jit.c               # JIT thin wrappers (1:1 SLJIT mapping)
-│   ├── jit_highlevel.c     # JIT high-level helpers
-│   ├── shadowhook_override.c # dlopen/sh_linker_init wrappers for Android 15
-│   └── nothing_path.c      # Nothing library temp file extraction
-├── cmake/
-│   └── gen_nothing_header.cmake # CMake script: .so → C header converter
-├── examples/
-│   └── main.c              # Complete usage example with JIT demo
-├── docs/                   # Documentation
-└── deps/                   # Submodules: shadowhook, xdl, sljit
-```
+| **[docs/GENERAL.md](docs/GENERAL.md)** | Quick start: prerequisites, setup, build, and basic usage |
+| **[docs/USAGE.md](docs/USAGE.md)** | Complete API reference: memory, hooking, intercept, records, JIT, IL2CPP, XDL, DL callbacks |
+| **[docs/RECIPES.md](docs/RECIPES.md)** | Common patterns: integrity checks, SSL pinning bypass, JIT code generation |
 
 ---
 
 ## Known Issues
 
-### ShadowHook Error 12 on Android 15
+### ShadowHook Error 12
 
-When using ShadowHook on **Android 15 (API 35)**, you may encounter **error code 12** (`MK_ERRNO_INIT_LINKER`) during `memkit_hook_init()`. This is caused by changes to Android's internal linker behavior in Android 15 that affect ShadowHook's hooking mechanism.
+When using ShadowHook on building shared library, you may encounter **error code 12** (`MK_ERRNO_INIT_LINKER`) during `memkit_hook_init()`. This is caused by missing libshadowhook_nothing.so.
 
-**Root Cause:** ShadowHook requires `libshadowhook_nothing.so` to be present alongside `libshadowhook.so` for proper Android 15+ compatibility. When building from local sources (USE_LOCAL_DEPS=ON), this library is now automatically built as part of the CMake build process.
-
-**Solution:**
-- The CMakeLists.txt now **automatically builds `libshadowhook_nothing.so`** when using local dependencies
-- No manual action required - just rebuild your project:
-  ```bash
-  make clean && make
-  ```
-
-**Tracking:** See upstream issue [bytedance/android-inline-hook#113](https://github.com/bytedance/android-inline-hook/issues/113) for the latest status.
+**Root Cause:** ShadowHook requires `libshadowhook_nothing.so` to be present alongside `libshadowhook.so` for proper shared library compatibility. When building from local sources (USE_LOCAL_DEPS=ON), this library is now automatically built as part of the CMake build process.
 
 ### Subproject Builds
 
@@ -191,7 +52,7 @@ When building memkit as a subproject via `add_subdirectory()` in your parent pro
 ```cmake
 enable_language(ASM)  # Required for shadowhook assembly (sh_glue.S). Needs CMake 3.9+.
 add_subdirectory(path/to/Android-Mem-Kit)
-target_link_libraries(your_lib memkit)
+target_link_libraries(your_lib)
 ```
 
 Set `-DMEMKIT_BUILD_SHARED=OFF` to build a static library. The default is `OFF` for subprojects and `ON` for standalone builds.
@@ -200,9 +61,9 @@ Set `-DMEMKIT_BUILD_SHARED=OFF` to build a static library. The default is `OFF` 
 
 The build process produces two files in `build/<ABI>/lib/`:
 - **libmemkit.so** - Main memkit library (~190KB for arm64-v8a with JIT)
-- **libshadowhook_nothing.so** - Required companion library for Android 15+ compatibility (~1.5KB)
+- **libshadowhook_nothing.so** - Required companion library for shared library compatibility (~1.5KB)
 
-Both files must be packaged together in your APK's `lib/<ABI>/` directory.
+Both files must be packaged together in your `lib/<ABI>/` directory.
 
 ---
 
@@ -212,8 +73,7 @@ This project utilizes excellent open-source libraries:
 
 - **[ShadowHook](https://github.com/bytedance/android-inline-hook)** by ByteDance - Inline hooking for Android
 - **[XDL](https://github.com/hexhacking/xdl)** by HexHacking - Dynamic linker bypass
-- **[Dobby](https://github.com/jmpews/Dobby)** - Lightweight hooking framework (original inspiration)
-- **[KittyMemory](https://github.com/MJx0/KittyMemory)** - Memory patching library (original inspiration)
+- **[SLJIT](https://github.com/zherczeg/sljit)** - Platform-independent JIT code generation
 
 ---
 
