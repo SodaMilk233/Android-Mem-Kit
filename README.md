@@ -139,7 +139,9 @@ void init() {
 Android-Mem-Kit/
 ├── include/
 │   ├── memkit.h            # Main public API header
-│   └── memkit_jit.h        # JIT compiler API (SLJIT wrappers)
+│   ├── memkit_jit.h        # JIT compiler API (SLJIT wrappers)
+│   ├── nothing_path.h      # Internal header for nothing path management
+│   └── nothing_embed.h     # Embedded libshadowhook_nothing.so blob (auto-generated)
 ├── src/
 │   ├── memory.c            # Memory patching (mprotect-based)
 │   ├── hooking.c           # Basic hook/unhook + error handling
@@ -154,8 +156,7 @@ Android-Mem-Kit/
 │   ├── jit.c               # JIT thin wrappers (1:1 SLJIT mapping)
 │   ├── jit_highlevel.c     # JIT high-level helpers
 │   ├── shadowhook_override.c # dlopen/sh_linker_init wrappers for Android 15
-│   ├── nothing_path.c      # Nothing library temp file extraction
-│   └── nothing_embed.h     # Embedded libshadowhook_nothing.so blob (auto-generated)
+│   └── nothing_path.c      # Nothing library temp file extraction
 ├── cmake/
 │   └── gen_nothing_header.cmake # CMake script: .so → C header converter
 ├── examples/
