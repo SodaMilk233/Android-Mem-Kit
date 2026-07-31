@@ -8,7 +8,7 @@
 #include <sched.h>
 #include <android/log.h>
 
-#include "memkit.h"
+#include "../include/memkit.h"
 
 // ============================================================================
 // IL2CPP: STATIC STATE (Thread-Safe via C11 Atomics)

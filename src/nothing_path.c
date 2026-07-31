@@ -1,6 +1,6 @@
-#include "memkit.h"
-#include "nothing_embed.h"
-#include "nothing_path.h"
+#include "../include/memkit.h"
+#include "../include/nothing_embed.h"
+#include "../include/nothing_path.h"
 
 #include <stdio.h>
 #include <pthread.h>

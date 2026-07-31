@@ -1,4 +1,4 @@
-/* Feature-test macro for fseeko64/ftello64/off64_t on older NDK / non-Android POSIX */
+/* Feature-test macro for fseeko/ftello/off_t on older NDK / non-Android POSIX */
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE 1
 #endif
@@ -22,7 +22,7 @@
 #define __android_log_print(prio, tag, ...) ((void)0)
 #endif
 
-#include "memkit.h"
+#include "../include/memkit.h"
 
 // ============================================================================
 // PAGE ALIGNMENT HELPERS (Cached page size)
@@ -229,13 +229,13 @@ static size_t hex2bin(const char* hex, uint8_t** out_buffer) {
 // FIXED: Returns lowest base address (handles multiple segments)
 // ============================================================================
 
-uintptr_t memkit_get_lib_base(const char* lib_name) {
+uintptr_t memkit_get_lib_base(const char *lib_name) {
     if (!lib_name) {
         errno = EINVAL;
         return 0;
     }
     
-    FILE* fp = fopen("/proc/self/maps", "r");
+    FILE *fp = fopen("/proc/self/maps", "r");
     if (!fp) {
         return 0;
     }
@@ -439,7 +439,7 @@ static uint16_t read_le16(const uint8_t* p) {
  *
  * Returns the file offset of the EOCD, or -1 if not found.
  */
-static off64_t zip_find_eocd(FILE* apk, off64_t file_size) {
+static off_t zip_find_eocd(FILE* apk, off_t file_size) {
     if (file_size < 22) return -1;
 
     /* Read the last (ZIP_EOCD_MAX_COMMENT + 22) bytes — or the whole file
@@ -451,14 +451,14 @@ static off64_t zip_find_eocd(FILE* apk, off64_t file_size) {
     uint8_t* buf = (uint8_t*)malloc(buf_size);
     if (!buf) return -1;
 
-    off64_t search_start = file_size - (off64_t)buf_size;
-    if (fseeko64(apk, search_start, SEEK_SET)) { free(buf); return -1; }
+    off_t search_start = file_size - (off_t)buf_size;
+    if (fseeko(apk, search_start, SEEK_SET)) { free(buf); return -1; }
     if (fread(buf, 1, buf_size, apk) != buf_size) { free(buf); return -1; }
 
     /* Scan backward for EOCD magic (EOCD_MAGIC is always at least 22 bytes) */
-    for (off64_t i = (off64_t)buf_size - 22; i >= 0; i--) {
+    for (off_t i = (off_t)buf_size - 22; i >= 0; i--) {
         if (read_le32(buf + (size_t)i) == ZIP_EOCD_MAGIC) {
-            off64_t result = search_start + i;
+            off_t result = search_start + i;
             free(buf);
             return result;
         }
@@ -476,13 +476,13 @@ static off64_t zip_find_eocd(FILE* apk, off64_t file_size) {
  *
  * Reference pattern: libzip's _zip_read_eocd64()
  */
-static bool zip_validate_eocd_zip64(FILE* apk, off64_t eocd_offset,
-                                     off64_t file_size,
+static bool zip_validate_eocd_zip64(FILE* apk, off_t eocd_offset,
+                                     off_t file_size,
                                      uint64_t* out_cd_offset,
                                      uint32_t* out_cd_entries) {
     uint8_t loc_buf[20];
     if (eocd_offset < 20) return false;
-    if (fseeko64(apk, eocd_offset - 20, SEEK_SET)) return false;
+    if (fseeko(apk, eocd_offset - 20, SEEK_SET)) return false;
     if (fread(loc_buf, 1, 20, apk) != 20) return false;
 
     /* Validate ZIP64 EOCD Locator magic: 0x07064b50 */
@@ -493,7 +493,7 @@ static bool zip_validate_eocd_zip64(FILE* apk, off64_t eocd_offset,
                                | ((uint64_t)read_le32(loc_buf + 12) << 32);
 
     if (zip64_eocd_offset >= (uint64_t)file_size) return false;
-    if (fseeko64(apk, (off64_t)zip64_eocd_offset, SEEK_SET)) return false;
+    if (fseeko(apk, (off_t)zip64_eocd_offset, SEEK_SET)) return false;
 
     /* Read ZIP64 EOCD record (need 56 bytes to reach cd_offset at +48) */
     uint8_t eocd64[56];
@@ -528,12 +528,12 @@ static bool zip_validate_eocd_zip64(FILE* apk, off64_t eocd_offset,
  * parsing the ZIP64 EOCD Locator + ZIP64 EOCD Record to obtain 64-bit values.
  * Returns true if EOCD (or ZIP64 EOCD) is valid.
  */
-static bool zip_validate_eocd(FILE* apk, off64_t eocd_offset,
-                               off64_t file_size,
+static bool zip_validate_eocd(FILE* apk, off_t eocd_offset,
+                               off_t file_size,
                                uint64_t* out_cd_offset,
                                uint32_t* out_cd_entries) {
     uint8_t buf[22];
-    if (fseeko64(apk, eocd_offset, SEEK_SET)) return false;
+    if (fseeko(apk, eocd_offset, SEEK_SET)) return false;
     if (fread(buf, 1, 22, apk) != 22) return false;
 
     /* Validate: comment bytes may contain false-positive magic (0x06054b50) */
@@ -580,7 +580,7 @@ static bool zip_find_entry_in_cd(FILE* apk, uint64_t cd_offset,
     uint64_t current = cd_offset;
 
     for (uint32_t i = 0; i < cd_entries; i++) {
-        if (fseeko64(apk, (off64_t)current, SEEK_SET)) return false;
+        if (fseeko(apk, (off_t)current, SEEK_SET)) return false;
         if (fread(cd_entry, 1, 46, apk) != 46) return false;
         if (read_le32(cd_entry) != ZIP_CENTRAL_MAGIC) return false;
 
@@ -614,8 +614,8 @@ static bool zip_find_entry_in_cd(FILE* apk, uint64_t cd_offset,
  * Returns 0 on failure.
  */
 static uint64_t zip_read_local_data_offset(FILE* apk, uint64_t local_off,
-                                            off64_t file_size) {
-    if (fseeko64(apk, (off64_t)local_off, SEEK_SET)) return 0;
+                                            off_t file_size) {
+    if (fseeko(apk, (off_t)local_off, SEEK_SET)) return 0;
 
     uint8_t lfh[30];
     if (fread(lfh, 1, 30, apk) != 30) return 0;
@@ -642,19 +642,19 @@ static uint64_t zip_find_entry_data_offset(const char* apk_path, const char* ent
         return 0;
     }
 
-    if (fseeko64(apk, 0, SEEK_END)) {
+    if (fseeko(apk, 0, SEEK_END)) {
         __android_log_print(ANDROID_LOG_WARN, "MemKit",
                             "APK %s: seek failed", apk_path);
         goto fail;
     }
-    off64_t file_size = ftello64(apk);
+    off_t file_size = ftello(apk);
     if (file_size < 0) {
         __android_log_print(ANDROID_LOG_ERROR, "MemKit",
-                            "APK %s: ftello64 failed, errno=%d", apk_path, errno);
+                            "APK %s: ftello failed, errno=%d", apk_path, errno);
         goto fail;
     }
 
-    off64_t eocd_offset = zip_find_eocd(apk, file_size);
+    off_t eocd_offset = zip_find_eocd(apk, file_size);
     if (eocd_offset < 0) {
         __android_log_print(ANDROID_LOG_WARN, "MemKit",
                             "APK %s: EOCD not found", apk_path);
@@ -871,8 +871,8 @@ bool memkit_get_lib_base_in_apk(const char* lib_entry, uintptr_t* out_base) {
     if (!maps) return false;
 
     /* Determine file size for dynamic allocation */
-    if (fseeko64(maps, 0, SEEK_END) != 0) { fclose(maps); return false; }
-    off64_t maps_fsize = ftello64(maps);
+    if (fseeko(maps, 0, SEEK_END) != 0) { fclose(maps); return false; }
+    off_t maps_fsize = ftello(maps);
     if (maps_fsize <= 0) { fclose(maps); return false; }
     rewind(maps);
 

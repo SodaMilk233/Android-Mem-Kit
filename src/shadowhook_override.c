@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "nothing_path.h"
+#include "../include/nothing_path.h"
 
 // ============================================================================
 // LINKER WRAP INTERFACES

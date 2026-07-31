@@ -12,7 +12,7 @@
 #include <sys/system_properties.h>
 #endif
 
-#include "memkit.h"
+#include "../include/memkit.h"
 
 // ============================================================================
 // IL2CPP: IMAGE RESOLUTION HELPER

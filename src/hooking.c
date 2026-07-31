@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#include "memkit.h"
-#include "shadowhook.h"
+#include "../include/memkit.h"
+#include "../deps/shadowhook/shadowhook/src/main/cpp/include/shadowhook.h"
 
 // ============================================================================
 // HOOKING: INITIALIZATION

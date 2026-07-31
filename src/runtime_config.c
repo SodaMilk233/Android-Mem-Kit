@@ -1,5 +1,5 @@
-#include "memkit.h"
-#include "shadowhook.h"
+#include "../include/memkit.h"
+#include "../deps/shadowhook/shadowhook/src/main/cpp/include/shadowhook.h"
 
 // ============================================================================
 // RUNTIME CONFIG: MODE

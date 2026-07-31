@@ -3,19 +3,27 @@
 // Generic dynamic linking toolkit for library discovery and symbol resolution
 //
 
+/* glibc gates dl_phdr_info in <link.h> behind __USE_GNU (bionic defines it
+   unconditionally). Define it here so this file stays self-contained on
+   desktop Linux builds without requiring -D_GNU_SOURCE on the command line. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <libgen.h>
 #include <limits.h>
 #include <link.h>
 #include <android/log.h>
 
-#include "memkit.h"
-#include "xdl.h"
+#include "../include/memkit.h"
+#include "../deps/xdl/xdl/src/main/cpp/include/xdl.h"
 
+struct dl_phdr_info;
 // ============================================================================
 // PHASE 1: CORE DISCOVERY API
 // ============================================================================
