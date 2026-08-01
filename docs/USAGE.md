@@ -26,6 +26,35 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 ```
 
+### Header Layout
+
+`memkit.h` is an umbrella header. Including it exposes the entire public API. For smaller compile footprints, include only the sub-headers you need:
+
+| Header | Content |
+|--------|---------|
+| `memkit_common.h` | Shared types, `MK_ERRNO_*` error codes, callback types |
+| `memkit_memory.h` | Memory patching & library base discovery |
+| `memkit_hook.h` | Function hooking, V2 hook flags, proxy/stack management |
+| `memkit_intercept.h` | Intercept API (CPU context inspection/modification) |
+| `memkit_records.h` | Hook/intercept operation records (CSV) |
+| `memkit_il2cpp.h` | IL2CPP symbol resolution & runtime helpers, `IL2CPP_CALL` |
+| `memkit_xdl.h` | XDL wrapper (library discovery, symbol resolution) |
+| `memkit_dl.h` | DL helpers & dlopen/dlclose callbacks |
+| `memkit_runtime.h` | Runtime configuration (mode, debug, record, disable) |
+| `memkit_nothing.h` | `libshadowhook_nothing.so` path management |
+| `memkit_jit.h` | JIT compiler API (SLJIT wrappers) |
+
+```c
+// Umbrella — everything (recommended for most cases)
+#include "memkit.h"
+
+// Or selectively — e.g., JIT only
+#include "memkit_jit.h"
+
+// Or memory patching only
+#include "memkit_memory.h"
+```
+
 ### Initialization Sequence
 
 ```c
