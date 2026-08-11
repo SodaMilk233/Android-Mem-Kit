@@ -18,7 +18,8 @@
 #define MK_RECORD_ITEM_ERRNO            (1 << 8)
 #define MK_RECORD_ITEM_STUB             (1 << 9)
 #define MK_RECORD_ITEM_FLAGS            (1 << 10)
-#define MK_RECORD_ITEM_ALL              0x7FF
+#define MK_RECORD_ITEM_TRACE            (1 << 11)
+#define MK_RECORD_ITEM_ALL              0xFFFFFFFF
 
 /* Get operation records as CSV string (caller must free) */
 /* NOTE: The returned string is heap-allocated; caller is responsible for calling free() */
